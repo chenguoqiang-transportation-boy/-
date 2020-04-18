@@ -1,0 +1,135 @@
+#我想看到待办事项页面，不是通过双击本地文件打开，而是通过网址访问
+
+1.设置好网址，你给这个页面起个什么网址
+2.当用户通过这个网址发出请求时，将网页发送给他
+3.因为这个网页是代办事项网页，网址设置和用户请求都让 todolist APP处理
+
+to_do_list/to_do_list/urls.py   【所有网址首先由它（to_do_list/urls.py）接手】
+          ||
+          ||
+         \  /
+          \/
+to_do_list/todolist/urls.py     【与待办事项相关的网址交给它（todolist/urls.py）接手】
+          ||
+          ||
+         \  /
+          \/
+to_do_list/todolist/views.py    【用户通过这些网址发出的请求有它（views.py）来处理】
+
+4.关于include()
+a.位置：to_do_list/to_do_list/urls.py
+b.代码：path('todo/', include(todolist.urls)),
+c.含义:include表示将localhost:8000/todo/的前面裁掉，裁掉后面的内容交给todolist.urls里解决
+ todolist/urls.py里面再弄一个path('home/', views.home),表示转到views.py的home函数
+
+5.网页名，网址名
+（1）大项目 ---> 要避免网址名、网页名冲突
+（2）
+a.render()如何找到网页？
+根据所提供的网页名称，找所有的templates的文件夹，取第一个匹配的网页名字
+b.网页名字重复怎么办？给个前缀
+建个新文件夹在templates下，以APP的名字命名
+templates/APP的名字/网页名字
+views.py --> return render(request, 'todolist/home.html')
+c.想改网站怎么办？<a href='hostname/urlpattern'></a>
+给网址起名字: <a href='{% url 'url_name' %}></a>   template tag{% tag_name %}
+d.网址名跟其他APP里面的网址名字重复怎么办？给个前缀
+urls.py --> app_name = 'todolist'
+<a href="{% url 'todolist:url_name' %}"></a>
+6.视频上第一次/todo/home/的未讲解之处
+视频中没讲到打开服务器后，不能像前那样直接localhost:8000，而应该改为localhost:8000/todo/home/，不然网址首页出不来
+
+7.模板继承template inheritance
+想改变导航栏的样式
+做个模板html，其他网页继承它，拓展它，类似python的类继承
+three-level:建议，大网站三级，小网站两级
+                             article.html
+                           /
+            base_news.html
+          /                \
+base.html                    live.html
+          \
+            base_sports.html
+Django语法定义base.html
+        {% block blockname %}                  block是块的意思，blockname随便你取，可更改
+        {% endblock blockname %}
+
+8.静态文件
+（1）
+图片、css、JavaScript
+（2）
+app/static/app/images
+app/static/app/js
+app/static/app/css
+app/static/app/icons
+避免与其他的app的static文件夹里面的静态文件冲突
+（3）
+{% load static %}
+{% static "路径" %}
+↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑前端
+↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓后端
+POST——————修改数据    如：写入、新增
+GET——————获取数据
+9.
+（1）位置：base.html
+（2）代码：
+<form class="form-inline mt-2 mt-md-0 col-7 justify-content-end" method="POST" action="">
+  {% csrf_token %}
+  <input name="待办事项" class="form-control mr-sm-2" type="text" placeholder="待办事项" aria-label="Search">
+  <button class="btn btn-outline-success my-2 my-sm-0" type="submit">添加</button>
+</form>
+（3）含义：上述代码有几个要点
+method="POST"表示修改数据
+action=""表示发送数据到本机
+{% csrf_token %}保证浏览器跨站安全，防止网站攻击
+name="待办事项"   表示input框为待办事项 ，placeholder="待办事项"  表示框内的默认内容
+type="submit"表示提交数据
+其中{% csrf_token %}和name="待办事项"都是Django的要求，其他的只要是建站都需要
+10.
+（1）代码：content = {'待办事项':request.POST['待办事项']}
+（2）含义：request.POST['待办事项']   表示获取用户输入内容，'待办事项'是键值对中的“键”，输出为“值”
+11.发送请求
+request GET
+{% csrf_token %}     跨站请求伪造
+content dictionary 字典
+{{ var }}     变量{{ }}  和标签 {% %}
+12.
+{{ forloop.counter }}表示——————序号，从1----n
+13.增删改查   ————————属于后端内容
+python manage.py shell
+
+from todolist.models import Todo    #从todolist的models.py中导入Todo类，也是一张表
+Todo.objects.all()
+__str__    #此行不用写，这个意思是让你改models.py中的str函数，用以决定返回的东西
+Todo.objects.count()      #行的数量
+（1）增
+a_row = Todo(thing = '看电影', done =False)    #创建一行数据，创建之后一定要保存
+a_row.save()     #保存，
+a_row.thing
+a_row.id
+（2）查
+Todo.objects.filter(done = False)   #获取done = False的数据
+
+another_row = Todo.objects.get(thing = '逛街')    #获取thing = '逛街'的数据
+another_row.thing
+（3）改
+a_row.thing = '去超市'      #把逛街改成“去超市”
+a_row.save()
+（4）删
+a_row.delete()
+Todo.object.all()
+
+exit()
+
+Register Models
+14.Bootstrap弹框
+
+15.数据库————以MySQL为例
+（1）create Model
+（2）python manage.py makemigration
+(注意：create Model是用于自己看[面向网站开发者]，完成makemigration后，Django会自动创建数据库文件，用于计算机看[面向数据库管理员])
+此外，每次新增Model，都需要运行一次python manage.py makemigration
+（3）python manage.py sqlmigrate todolist 0001
+不会真的建表，只是查看，此步骤不重要，可以不弄
+（4）python manage.py migrate
+会出现很多表，是Django APP自带的表，最后一个是自己app的表
